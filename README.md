@@ -17,9 +17,12 @@ This is a simple web application that checks accessibility issues in HTML code. 
 - CodeMirror 6
 - styled-components
 
-## How to Run Locally
+## How to Run 
 
-1. Clone the repository:
-
-   git clone https://github.com/WioletaKolodziej/accessibility-checker.git
-   cd accessibility-checker
+ Locally
+   Clone the repository:
+      git clone https://github.com/WioletaKolodziej/accessibility-checker.git
+      cd accessibility-checker
+      
+ Vercel
+   https://accessibility-web-checker.vercel.app/
