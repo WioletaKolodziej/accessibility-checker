@@ -1,30 +1,70 @@
+// React and external imports
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import { checkAccessibility, Issue } from "../utils/checkAccessibility";
 import { useCodeMirror } from "@uiw/react-codemirror";
 import { html } from "@codemirror/lang-html";
+import { EditorView } from "codemirror";
 import { Extension } from "@codemirror/state";
-import { getAccessibilityExtension } from "../utils/highlightIssues";
 
+// Utility functions for accessibility checking and highlighting
+import { getAccessibilityExtensions } from "../utils/highlightIssues";
+import { runAxeCheck, AxeIssue } from "../utils/runAxeCheck";
+
+// Styled components for layout and UI
 const Container = styled.section`
-  max-width: 800px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: calc(100dvh - 5rem);
+  overflow: hidden;
   padding: 2rem;
+  box-sizing: border-box;
 `;
 
 const Heading = styled.h2`
   font-size: 1.5rem;
   font-weight: bold;
-  margin-bottom: 1rem;
 `;
 
-const Label = styled.label`
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+const ContentWrapper = styled.div`
+  display: flex;
+  flex: 1;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  overflow: hidden;
 `;
 
-const Button = styled.button`
+const EditorWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 50%;
+  height: 100%;
+  min-height: 50vh;
+  position: relative;
+  overflow: hidden;
+`;
+
+const EditorTop = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const CodeMirrorWrapper = styled.div`
+  flex: 1;
+  height: 100%;
+  max-height: calc(100dvh - 300px);
+  overflow: auto;
+  border-radius: 6px;
+  border: 1px solid ${({ theme }) => theme.border};
+`;
+
+const StickyButton = styled.button`
+  position: sticky;
+  bottom: 1rem;
+  margin-top: 2rem;
   background-color: ${({ theme }) => theme.accent};
   color: white;
   padding: 0.8rem 1.2rem;
@@ -33,28 +73,67 @@ const Button = styled.button`
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.3s ease;
+  z-index: 10;
+  align-self: flex-start;
 
   &:hover {
     background-color: ${({ theme }) => theme.success};
   }
-  transition: background-color 0.3s ease, transform 0.2s ease;
-
   &:active {
     transform: scale(0.97);
   }
 `;
 
+const Panel = styled.div`
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  position: relative;
+`;
+
+const ResultHint = styled.div`
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.success};
+  position: sticky;
+  top: 0;
+  background: ${({ theme }) => theme.background};
+  padding: 0.5rem 0;
+  z-index: 5;
+`;
+
+const Label = styled.label`
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+`;
+
 const ResultsWrapper = styled.div`
-  margin-top: 1.5rem;
   aria-live: polite;
 `;
 
 const ResultsList = styled.ul`
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   padding-left: 1rem;
   list-style-type: disc;
-  color: ${({ theme }) => theme.error};
   animation: fadeIn 0.3s ease-in;
+
+  .error-critical {
+    color: #d9534f;
+  }
+  .error-serious {
+    color: #f0ad4e;
+  }
+  .error-moderate {
+    color: #f7c948;
+  }
+  .error-minor {
+    color: #999;
+  }
+
+  li {
+    cursor: pointer;
+  }
 `;
 
 const SuccessMessage = styled.p`
@@ -65,32 +144,71 @@ const SuccessMessage = styled.p`
 const Hint = styled.div`
   font-size: 0.95rem;
   color: ${({ theme }) => theme.success};
-  margin-bottom: 1rem;
   animation: fadeIn 0.5s ease-out;
+  margin-top: 0.5rem;
 `;
+
+const impactIconMap: Record<string, string> = {
+  critical: "❌",
+  serious: "⚠️",
+  moderate: "ℹ️",
+  minor: "💡",
+};
 
 export const Checker = () => {
   const [input, setInput] = useState("");
-  const [results, setResults] = useState<string[]>([]);
+  const [results, setResults] = useState<AxeIssue[]>([]);
   const [extensions, setExtensions] = useState<Extension[]>([html()]);
+  const editorRef = useRef<EditorView | null>(null);
+  const editorDOMRef = useRef<HTMLDivElement>(null);
 
-  const { setContainer } = useCodeMirror({
+  useCodeMirror({
+    container: editorDOMRef.current ?? undefined,
     value: input,
-    height: "200px",
+    height: "100%",
     extensions,
     theme: "dark",
-    onChange: (value) => setInput(value),
+    onCreateEditor: (view) => {
+      editorRef.current = view;
+    },
+    onChange: (value) => {
+      setInput(value);
+    },
   });
 
-  const handleCheck = () => {
-    const issues: Issue[] = checkAccessibility(input);
-    setResults(issues.map((i) => i.message));
-    const accessibilityExt = getAccessibilityExtension(issues);
-    setExtensions([html(), accessibilityExt]);
+  const handleCheck = async () => {
+    const issues = await runAxeCheck(input);
+    setResults(issues);
+    const decoration = getAccessibilityExtensions(issues);
+    setExtensions([html(), decoration]);
+    if (issues.length > 0 && editorRef.current) {
+      editorRef.current.dispatch({
+        effects: EditorView.scrollIntoView(issues[0].from, {
+          y: "start",
+          x: "start",
+        }),
+      });
+    }
+  };
+
+  const scrollToIssue = (from: number) => {
+    if (!editorRef.current) return;
+
+    editorRef.current.dispatch({
+      effects: EditorView.scrollIntoView(from, {
+        y: "start",
+        x: "start",
+      }),
+    });
+
+    const dom = editorRef.current.domAtPos(from)?.node;
+    if (dom instanceof HTMLElement) {
+      dom.classList.add("highlighted-temp");
+      setTimeout(() => dom.classList.remove("highlighted-temp"), 1500);
+    }
   };
 
   const hintRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (hintRef.current) {
       hintRef.current.animate(
@@ -111,28 +229,44 @@ export const Checker = () => {
     <Container aria-labelledby="checker-heading">
       <Heading id="checker-heading">Accessibility Checker</Heading>
 
-      <Hint ref={hintRef}>
-        💡 Paste your HTML snippet like &lt;img src="..." /&gt;
-      </Hint>
+      <ContentWrapper>
+        <EditorWrapper>
+          <EditorTop>
+            <Hint ref={hintRef}>
+              💡 Type or paste your HTML snippet below (e.g. &lt;img src="..." /&gt;) and then press the <strong>Check Accessibility</strong> button to run analysis and see if your code meets accessibility standards.
+            </Hint>
+            <Label htmlFor="html-input">Paste your HTML code:</Label>
+            <CodeMirrorWrapper ref={editorDOMRef} />
+          </EditorTop>
+          <StickyButton onClick={handleCheck}>Check Accessibility</StickyButton>
+        </EditorWrapper>
 
-      <Label htmlFor="html-input">Paste your HTML code:</Label>
-      
-      <div ref={setContainer} />
-
-      <Button onClick={handleCheck}>Check Accessibility</Button>
-
-      <ResultsWrapper aria-live="polite">
-        {results.length === 0 && input && (
-          <SuccessMessage>No issues found 🎉</SuccessMessage>
-        )}
-        {results.length > 0 && (
-          <ResultsList>
-            {results.map((r, i) => (
-              <li key={i}>{r}</li>
-            ))}
-          </ResultsList>
-        )}
-      </ResultsWrapper>
+        <Panel>
+          <ResultsWrapper aria-live="polite">
+            {results.length === 0 && input && (
+              <SuccessMessage>No issues found 🎉</SuccessMessage>
+            )}
+            {results.length > 0 && (
+              <>
+                <ResultHint>
+                  💡 Click on an issue to scroll to the affected element in the editor:
+                </ResultHint>
+                <ResultsList>
+                  {results.map((r, i) => (
+                    <li
+                      key={i}
+                      className={`error-${r.impact}`}
+                      onClick={() => scrollToIssue(r.from)}
+                    >
+                      {impactIconMap[r.impact ?? "minor"]} [{r.impact}] {r.message} — <code>{r.html}</code>
+                    </li>
+                  ))}
+                </ResultsList>
+              </>
+            )}
+          </ResultsWrapper>
+        </Panel>
+      </ContentWrapper>
     </Container>
   );
 };

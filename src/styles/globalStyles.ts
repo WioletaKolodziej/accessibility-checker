@@ -22,11 +22,16 @@ export const GlobalStyle = createGlobalStyle`
     background: ${({ theme }) => theme.accent};
     color: white;
   }
-    
+
 .accessibility-error {
-  background-color: rgba(255, 0, 0, 0.2) !important;
+  background-color: rgba(255, 0, 0, 0.2);
   border-bottom: 1px dotted red;
   cursor: help;
+}
+
+.cm-line .highlighted-temp {
+  background-color: yellow;
+  transition: background-color 0.3s ease;
 }
 
 `;

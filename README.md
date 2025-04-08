@@ -1,28 +1,40 @@
 # Accessibility Checker
 
-This is a simple web application that checks accessibility issues in HTML code. It highlights common problems like missing `alt` attributes in `img` tags, lack of `label` for `input` fields, and more.
+A web-based tool for checking accessibility issues in raw HTML code. Powered by [axe-core](https://github.com/dequelabs/axe-core) and integrated with CodeMirror editor for real-time highlighting and navigation.
 
-## Features
+## ✨ Features
 
-- Check accessibility issues in HTML code.
-- Highlights missing `alt` attributes in `img` tags.
-- Checks for missing `label` tags in forms.
-- Detects inline styles that may affect accessibility (like poor color contrast).
+- Paste your HTML snippet and detect accessibility issues instantly.
+- Uses axe-core for WCAG-compliant accessibility analysis.
+- Highlights issues directly in the CodeMirror editor.
+- Issues are categorized by severity (critical, serious, moderate, minor).
+- Clickable issue list — auto-scrolls to problematic HTML tag.
+- Built-in dark/light mode toggle.
+- Sticky "Check Accessibility" button and responsive layout.
 
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 - React + TypeScript
 - Vite
 - CodeMirror 6
+- axe-core
 - styled-components
 
-## How to Run 
+## 🚀 How to Run
 
- Locally
-   Clone the repository:
-      git clone https://github.com/WioletaKolodziej/accessibility-checker.git
-      cd accessibility-checker
-      
- Vercel
-   https://accessibility-web-checker.vercel.app/
+### Locally
+
+```bash
+git clone https://github.com/WioletaKolodziej/accessibility-checker.git
+cd accessibility-checker
+npm install
+npm run dev
+```
+
+### Live Demo (Vercel)
+
+🔗 [https://accessibility-web-checker.vercel.app/](https://accessibility-web-checker.vercel.app/)
+
+---
+
+This project was built for learning and portfolio purposes. Feedback and contributions are welcome!
