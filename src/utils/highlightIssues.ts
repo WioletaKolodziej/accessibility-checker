@@ -1,16 +1,16 @@
 import { Decoration, ViewPlugin, DecorationSet, ViewUpdate } from "@codemirror/view";
 import { Extension } from "@codemirror/state";
-import { Issue } from "./checkAccessibility";
+import { AxeIssue } from "./runAxeCheck";
 
-export function getAccessibilityExtension(issues: Issue[]): Extension {
-  const decorations = Decoration.set(
-    issues.map(issue =>
-      Decoration.mark({
-        class: "accessibility-error",
-        attributes: { title: issue.message }
-      }).range(issue.from, issue.to)
-    )
+export function getAccessibilityExtensions(issues: AxeIssue[]): Extension {
+  const marks = issues.map(issue =>
+    Decoration.mark({
+      class: "accessibility-error",
+      attributes: { title: issue.message }
+    }).range(issue.from, issue.to)
   );
+
+  const decorations = Decoration.set(marks);
 
   return ViewPlugin.fromClass(
     class {
