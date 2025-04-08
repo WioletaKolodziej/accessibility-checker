@@ -160,10 +160,8 @@ export const Checker = () => {
   const [results, setResults] = useState<AxeIssue[]>([]);
   const [extensions, setExtensions] = useState<Extension[]>([html()]);
   const editorRef = useRef<EditorView | null>(null);
-  const editorDOMRef = useRef<HTMLDivElement>(null);
 
-  useCodeMirror({
-    container: editorDOMRef.current ?? undefined,
+  const { setContainer } = useCodeMirror({
     value: input,
     height: "100%",
     extensions,
@@ -236,7 +234,7 @@ export const Checker = () => {
               💡 Type or paste your HTML snippet below (e.g. &lt;img src="..." /&gt;) and then press the <strong>Check Accessibility</strong> button to run analysis and see if your code meets accessibility standards.
             </Hint>
             <Label htmlFor="html-input">Paste your HTML code:</Label>
-            <CodeMirrorWrapper ref={editorDOMRef} />
+            <CodeMirrorWrapper ref={setContainer} />
           </EditorTop>
           <StickyButton onClick={handleCheck}>Check Accessibility</StickyButton>
         </EditorWrapper>
