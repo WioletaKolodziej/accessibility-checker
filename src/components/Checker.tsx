@@ -159,6 +159,7 @@ export const Checker = () => {
   const [input, setInput] = useState("");
   const [results, setResults] = useState<AxeIssue[]>([]);
   const [extensions, setExtensions] = useState<Extension[]>([html()]);
+  const [hasChecked, setHasChecked] = useState(false);
   const editorRef = useRef<EditorView | null>(null);
 
   const { setContainer } = useCodeMirror({
@@ -179,6 +180,7 @@ export const Checker = () => {
     setResults(issues);
     const decoration = getAccessibilityExtensions(issues);
     setExtensions([html(), decoration]);
+    setHasChecked(true);
     if (issues.length > 0 && editorRef.current) {
       editorRef.current.dispatch({
         effects: EditorView.scrollIntoView(issues[0].from, {
@@ -241,7 +243,7 @@ export const Checker = () => {
 
         <Panel>
           <ResultsWrapper aria-live="polite">
-            {results.length === 0 && input && (
+            {hasChecked && results.length === 0 && input && (
               <SuccessMessage>No issues found 🎉</SuccessMessage>
             )}
             {results.length > 0 && (
