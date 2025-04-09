@@ -12,7 +12,7 @@ import { runAxeCheck, AxeIssue } from "../utils/runAxeCheck";
 
 // Components imports
 import HTMLVisualizer from "./HTMLVisualizer";
-import { Hint, Label } from "./sharedStyles";
+import { Hint, Label } from "./SharedStyles";
 
 
 // Styled components for layout and UI

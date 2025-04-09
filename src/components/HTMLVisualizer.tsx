@@ -1,6 +1,8 @@
 import React from "react";
 import styled from "styled-components";
-import { Hint, Label } from "./sharedStyles";
+import { Hint, Label } from "./SharedStyles";
+
+
 
 
 const PreviewContainer = styled.div`
