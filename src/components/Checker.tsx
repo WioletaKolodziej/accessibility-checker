@@ -10,6 +10,11 @@ import { Extension } from "@codemirror/state";
 import { getAccessibilityExtensions } from "../utils/highlightIssues";
 import { runAxeCheck, AxeIssue } from "../utils/runAxeCheck";
 
+// Components imports
+import HTMLVisualizer from "./HTMLVisualizer";
+import { Hint, Label } from "./sharedStyles";
+
+
 // Styled components for layout and UI
 const Container = styled.section`
   display: flex;
@@ -91,23 +96,6 @@ const Panel = styled.div`
   position: relative;
 `;
 
-const ResultHint = styled.div`
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.success};
-  position: sticky;
-  top: 0;
-  background: ${({ theme }) => theme.background};
-  padding: 0.5rem 0;
-  z-index: 5;
-`;
-
-const Label = styled.label`
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-`;
-
 const ResultsWrapper = styled.div`
   aria-live: polite;
 `;
@@ -141,11 +129,11 @@ const SuccessMessage = styled.p`
   margin-top: 1rem;
 `;
 
-const Hint = styled.div`
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.success};
-  animation: fadeIn 0.5s ease-out;
-  margin-top: 0.5rem;
+const VisualizerWrapper = styled.div`
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 `;
 
 const impactIconMap: Record<string, string> = {
@@ -226,6 +214,7 @@ export const Checker = () => {
   }, []);
 
   return (
+  <>
     <Container aria-labelledby="checker-heading">
       <Heading id="checker-heading">Accessibility Checker</Heading>
 
@@ -248,9 +237,9 @@ export const Checker = () => {
             )}
             {results.length > 0 && (
               <>
-                <ResultHint>
+                <Hint>
                   💡 Click on an issue to scroll to the affected element in the editor:
-                </ResultHint>
+                </Hint>
                 <ResultsList>
                   {results.map((r, i) => (
                     <li
@@ -268,5 +257,11 @@ export const Checker = () => {
         </Panel>
       </ContentWrapper>
     </Container>
+    {input && hasChecked && /<[^>]+>/.test(input) && (
+  <VisualizerWrapper>
+    <HTMLVisualizer html={input} />
+  </VisualizerWrapper>
+)}
+  </>
   );
 };
