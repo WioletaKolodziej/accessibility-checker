@@ -7,6 +7,7 @@ import { Hint, Label } from "./SharedStyles";
 
 const PreviewContainer = styled.div`
   width: 100%;
+  min-height: 50vh;
   background-color: #fff;
   color: #000;
   border: 1px solid #ccc;

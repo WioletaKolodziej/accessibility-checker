@@ -143,12 +143,39 @@ const impactIconMap: Record<string, string> = {
   minor: "💡",
 };
 
+const ScrollToVisualizerButton = styled.button`
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: ${({ theme }) => theme.accent};
+  color: white;
+  padding: 0.8rem 1.4rem;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 1rem;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  transition: opacity 0.3s ease, transform 0.2s ease;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.success};
+  }
+
+  &:active {
+    transform: translateX(-50%) scale(0.96);
+  }
+`;
+
+
 export const Checker = () => {
   const [input, setInput] = useState("");
   const [results, setResults] = useState<AxeIssue[]>([]);
   const [extensions, setExtensions] = useState<Extension[]>([html()]);
   const [hasChecked, setHasChecked] = useState(false);
   const editorRef = useRef<EditorView | null>(null);
+  const visualizerRef = useRef<HTMLDivElement>(null);
 
   const { setContainer } = useCodeMirror({
     value: input,
@@ -197,6 +224,7 @@ export const Checker = () => {
   };
 
   const hintRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (hintRef.current) {
       hintRef.current.animate(
@@ -212,6 +240,30 @@ export const Checker = () => {
       );
     }
   }, []);
+
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+useEffect(() => {
+  const node = visualizerRef.current;
+  if (!node) return;
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      setShowScrollButton(!entry.isIntersecting);
+    },
+    {
+      root: null,
+      threshold: 0.1,
+    }
+  );
+
+  observer.observe(node);
+
+  return () => {
+    observer.unobserve(node);
+  };
+}, [input, hasChecked]);
+
 
   return (
   <>
@@ -258,9 +310,17 @@ export const Checker = () => {
       </ContentWrapper>
     </Container>
     {input && hasChecked && /<[^>]+>/.test(input) && (
-  <VisualizerWrapper>
+  <VisualizerWrapper ref={visualizerRef}>
     <HTMLVisualizer html={input} />
   </VisualizerWrapper>
+)}
+{showScrollButton && (
+  <ScrollToVisualizerButton onClick={() => {
+    visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
+  }}
+  aria-label="Press to scroll to the HTML preview section">
+    ⬇️ Browser Preview
+  </ScrollToVisualizerButton>
 )}
   </>
   );
