@@ -222,7 +222,7 @@ export const Checker = () => {
         <EditorWrapper>
           <EditorTop>
             <Hint ref={hintRef}>
-              💡 Type or paste your HTML snippet below (e.g. &lt;img src="..." /&gt;) and then press the <strong>Check Accessibility</strong> button to run analysis and see if your code meets accessibility standards.
+              💡 Type or paste your HTML snippet below (e.g. &lt;img src="..."&gt;) and then press the <strong>Check Accessibility</strong> button to run analysis and see if your code meets accessibility standards.
             </Hint>
             <Label htmlFor="html-input">Paste your HTML code:</Label>
             <CodeMirrorWrapper ref={setContainer} />
