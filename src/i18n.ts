@@ -10,6 +10,9 @@ export type I18nMessages = {
     themeDark: string;
     switchToLight: string;
     switchToDark: string;
+    footerPrefix: string;
+    footerRights: string;
+    footerLinkAria: string;
   };
   checker: {
     title: string;
@@ -58,6 +61,9 @@ export const messages: Record<Language, I18nMessages> = {
       themeDark: "Ciemny",
       switchToLight: "Przelacz na motyw jasny",
       switchToDark: "Przelacz na motyw ciemny",
+      footerPrefix: "© 2026",
+      footerRights: "Wszelkie prawa zastrzezone.",
+      footerLinkAria: "Przejdz do strony UI-kolo",
     },
     checker: {
       title: "Accessibility Checker",
@@ -106,6 +112,9 @@ export const messages: Record<Language, I18nMessages> = {
       themeDark: "Dark",
       switchToLight: "Switch to light theme",
       switchToDark: "Switch to dark theme",
+      footerPrefix: "© 2026",
+      footerRights: "All rights reserved.",
+      footerLinkAria: "Go to UI-kolo website",
     },
     checker: {
       title: "Accessibility Checker",
