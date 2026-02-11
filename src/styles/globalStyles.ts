@@ -68,10 +68,23 @@ export const GlobalStyle = createGlobalStyle`
     outline: none;
   }
 
-  .cm-line .highlighted-temp {
-    background: ${({ theme }) => theme.warning};
-    color: ${({ theme }) => theme.background};
-    transition: background-color 0.25s ease;
+  .cm-line.highlighted-temp {
+    background: ${({ theme }) => theme.accentSoft};
+    box-shadow: inset 5px 0 0 ${({ theme }) => theme.danger}, inset 0 0 0 1px ${({ theme }) => theme.danger};
+    border-radius: 4px;
+    animation: issue-line-flash 1.2s ease-in-out 2;
+  }
+
+  @keyframes issue-line-flash {
+    0% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.18);
+    }
+    100% {
+      filter: brightness(1);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

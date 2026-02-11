@@ -26,6 +26,17 @@ export type I18nMessages = {
     emptyInputInfo: string;
     success: string;
     foundIssues: (count: number) => string;
+    lineInfo: (lineNumber: number) => string;
+    wcagLinkLabel: string;
+    priorityTabs: {
+      all: string;
+      critical: string;
+      serious: string;
+      moderate: string;
+      minor: string;
+      unknown: string;
+    };
+    noIssuesInPriority: string;
     previewButtonAria: string;
     previewButtonText: string;
   };
@@ -51,7 +62,7 @@ export const messages: Record<Language, I18nMessages> = {
     checker: {
       title: "Accessibility Checker",
       subtitle:
-        "Wklej fragment HTML, uruchom sprawdzenie WCAG 2A/2AA i przejdz od razu do miejsc, ktore wymagaja poprawy.",
+        "Wklej lub wpisz fragment HTML, uruchom sprawdzenie WCAG 2.2 i przejdz od razu do miejsc, ktore wymagaja poprawy.",
       editorTitle: "Edytor HTML",
       editorHint:
         "Korzystaj z semantycznych znacznikow, jednoznacznych etykiet i odpowiedniego kontrastu. Problematyczne fragmenty zostana oznaczone bezposrednio w kodzie.",
@@ -65,6 +76,17 @@ export const messages: Record<Language, I18nMessages> = {
       emptyInputInfo: "Najpierw dodaj kod HTML, a potem uruchom sprawdzenie.",
       success: "Nie wykryto problemow WCAG w tym fragmencie.",
       foundIssues: (count: number) => `Wykryto ${count} problemow. Lista jest uporzadkowana od najpowazniejszych.`,
+      lineInfo: (lineNumber: number) => `Linia: ${lineNumber}`,
+      wcagLinkLabel: "Opis WCAG",
+      priorityTabs: {
+        all: "Wszystkie",
+        critical: "Krytyczne",
+        serious: "Powazne",
+        moderate: "Srednie",
+        minor: "Niskie",
+        unknown: "Nieznane",
+      },
+      noIssuesInPriority: "Brak problemow w wybranym priorytecie.",
       previewButtonAria: "Przewin do podgladu HTML",
       previewButtonText: "Podglad HTML",
     },
@@ -88,7 +110,7 @@ export const messages: Record<Language, I18nMessages> = {
     checker: {
       title: "Accessibility Checker",
       subtitle:
-        "Paste an HTML snippet, run a WCAG 2A/2AA check, and jump straight to the lines that need attention.",
+        "Paste or write an HTML snippet, run a WCAG 2.2 check, and jump straight to the lines that need attention.",
       editorTitle: "HTML Editor",
       editorHint:
         "Use semantic tags, clear labels, and accessible contrast. Problematic code fragments are highlighted directly in the editor.",
@@ -102,6 +124,17 @@ export const messages: Record<Language, I18nMessages> = {
       emptyInputInfo: "Add HTML first, then run the check.",
       success: "No WCAG issues were found in this snippet.",
       foundIssues: (count: number) => `${count} issues found. Ordered by severity.`,
+      lineInfo: (lineNumber: number) => `Line: ${lineNumber}`,
+      wcagLinkLabel: "WCAG description",
+      priorityTabs: {
+        all: "All",
+        critical: "Critical",
+        serious: "Serious",
+        moderate: "Moderate",
+        minor: "Minor",
+        unknown: "Unknown",
+      },
+      noIssuesInPriority: "No issues in the selected priority.",
       previewButtonAria: "Scroll to HTML preview",
       previewButtonText: "HTML preview",
     },

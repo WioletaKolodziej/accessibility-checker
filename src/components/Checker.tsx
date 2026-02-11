@@ -112,6 +112,35 @@ const ResultList = styled.ol`
   list-style: none;
 `;
 
+const PriorityTabs = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+`;
+
+const PriorityTabButton = styled.button<{ $active: boolean }>`
+  border: 1px solid ${({ theme, $active }) => ($active ? theme.accent : theme.border)};
+  background: ${({ theme, $active }) => ($active ? theme.accentSoft : theme.surface)};
+  color: ${({ theme }) => theme.text};
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+`;
+
+const TabCount = styled.span`
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surfaceElevated};
+  min-width: 1.4rem;
+  text-align: center;
+  padding: 0.05rem 0.35rem;
+`;
+
 const ResultsViewport = styled.div`
   margin-top: 0.65rem;
   max-height: clamp(280px, 56vh, 680px);
@@ -171,6 +200,24 @@ const Snippet = styled.code`
   overflow-wrap: anywhere;
 `;
 
+const IssueMeta = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem 0.75rem;
+  border-top: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surfaceElevated};
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.8rem;
+`;
+
+const WcagLink = styled.a`
+  color: ${({ theme }) => theme.accent};
+  text-decoration: underline;
+  font-weight: 700;
+`;
+
 const SuccessMessage = styled.p`
   margin-top: 0.9rem;
   padding: 0.75rem;
@@ -178,6 +225,11 @@ const SuccessMessage = styled.p`
   border: 1px solid ${({ theme }) => theme.success};
   color: ${({ theme }) => theme.success};
   font-weight: 700;
+`;
+
+const EmptyPriorityMessage = styled.p`
+  margin-top: 0.9rem;
+  color: ${({ theme }) => theme.textMuted};
 `;
 
 const ScrollToPreview = styled.button`
@@ -201,6 +253,9 @@ const impactOrder: Record<string, number> = {
   unknown: 4,
 };
 
+const impactTabs = ["all", "critical", "serious", "moderate", "minor", "unknown"] as const;
+type ImpactTab = (typeof impactTabs)[number];
+
 const DEMO_HTML = `<main>
   <h1>Product card</h1>
   <img src="/shoe.png">
@@ -212,6 +267,13 @@ type Props = {
   messages: I18nMessages;
 };
 
+function getLineNumber(source: string, from: number): number {
+  if (!source) return 1;
+  const safeFrom = Math.max(0, Math.min(from, source.length));
+  const prefix = source.slice(0, safeFrom);
+  return prefix.split("\n").length;
+}
+
 export const Checker = ({ messages }: Props) => {
   const [input, setInput] = useState("");
   const [results, setResults] = useState<AxeIssue[]>([]);
@@ -219,8 +281,11 @@ export const Checker = ({ messages }: Props) => {
   const [hasChecked, setHasChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [activeTab, setActiveTab] = useState<ImpactTab>("all");
 
   const editorRef = useRef<EditorView | null>(null);
+  const checkRunIdRef = useRef(0);
+  const highlightTimeoutRef = useRef<number | null>(null);
   const visualizerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme() as ThemeType;
 
@@ -228,6 +293,36 @@ export const Checker = ({ messages }: Props) => {
     () => [...results].sort((a, b) => (impactOrder[a.impact ?? "unknown"] ?? 4) - (impactOrder[b.impact ?? "unknown"] ?? 4)),
     [results]
   );
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<ImpactTab, number> = {
+      all: sortedResults.length,
+      critical: 0,
+      serious: 0,
+      moderate: 0,
+      minor: 0,
+      unknown: 0,
+    };
+
+    for (const issue of sortedResults) {
+      const impact = issue.impact ?? "unknown";
+      const key: ImpactTab = impactTabs.includes(impact as ImpactTab) ? (impact as ImpactTab) : "unknown";
+      counts[key] += 1;
+    }
+
+    return counts;
+  }, [sortedResults]);
+
+  const visibleResults = useMemo(() => {
+    if (activeTab === "all") return sortedResults;
+    return sortedResults.filter((issue) => (issue.impact ?? "unknown") === activeTab);
+  }, [activeTab, sortedResults]);
+
+  useEffect(() => {
+    if (activeTab !== "all" && tabCounts[activeTab] === 0) {
+      setActiveTab("all");
+    }
+  }, [activeTab, tabCounts]);
 
   const { setContainer } = useCodeMirror({
     value: input,
@@ -242,6 +337,31 @@ export const Checker = ({ messages }: Props) => {
     },
   });
 
+  const highlightIssueLine = (position: number) => {
+    if (!editorRef.current) return;
+
+    const { node } = editorRef.current.domAtPos(position);
+    const baseElement = node instanceof HTMLElement ? node : node.parentElement;
+    const lineElement = baseElement?.closest(".cm-line");
+
+    if (!(lineElement instanceof HTMLElement)) return;
+
+    editorRef.current.dom.querySelectorAll(".cm-line.highlighted-temp").forEach((element) => {
+      element.classList.remove("highlighted-temp");
+    });
+
+    lineElement.classList.add("highlighted-temp");
+
+    if (highlightTimeoutRef.current !== null) {
+      window.clearTimeout(highlightTimeoutRef.current);
+    }
+
+    highlightTimeoutRef.current = window.setTimeout(() => {
+      lineElement.classList.remove("highlighted-temp");
+      highlightTimeoutRef.current = null;
+    }, 1800);
+  };
+
   const handleCheck = async () => {
     if (!input.trim()) {
       setHasChecked(true);
@@ -250,34 +370,54 @@ export const Checker = ({ messages }: Props) => {
       return;
     }
 
+    const runId = checkRunIdRef.current + 1;
+    checkRunIdRef.current = runId;
     setLoading(true);
-    const issues = await runAxeCheck(input);
-    setResults(issues);
-    setExtensions([html(), getAccessibilityExtensions(issues)]);
-    setHasChecked(true);
-    setLoading(false);
 
-    if (issues.length > 0 && editorRef.current) {
-      editorRef.current.dispatch({
-        effects: EditorView.scrollIntoView(issues[0].from, { y: "start", x: "start" }),
-      });
+    try {
+      const issues = await runAxeCheck(input);
+
+      if (checkRunIdRef.current !== runId) return;
+
+      setResults(issues);
+      try {
+        setExtensions([html(), getAccessibilityExtensions(issues)]);
+      } catch (extensionError) {
+        console.error("Could not build highlight extensions:", extensionError);
+        setExtensions([html()]);
+      }
+      setHasChecked(true);
+
+      if (issues.length > 0 && editorRef.current) {
+        const firstIssuePos = Math.max(0, Math.min(issues[0].from, editorRef.current.state.doc.length));
+        editorRef.current.dispatch({
+          selection: { anchor: firstIssuePos },
+          effects: EditorView.scrollIntoView(firstIssuePos, { y: "center", x: "start" }),
+        });
+        highlightIssueLine(firstIssuePos);
+      }
+    } catch (error) {
+      if (checkRunIdRef.current !== runId) return;
+      console.error("A11y check failed:", error);
+      setResults([]);
+      setExtensions([html()]);
+      setHasChecked(true);
+    } finally {
+      if (checkRunIdRef.current === runId) {
+        setLoading(false);
+      }
     }
   };
 
   const scrollToIssue = (from: number) => {
     if (!editorRef.current) return;
+    const safeFrom = Math.max(0, Math.min(from, editorRef.current.state.doc.length));
 
     editorRef.current.dispatch({
-      effects: EditorView.scrollIntoView(from, { y: "start", x: "start" }),
+      selection: { anchor: safeFrom },
+      effects: EditorView.scrollIntoView(safeFrom, { y: "center", x: "start" }),
     });
-
-    const node = editorRef.current.domAtPos(from)?.node;
-    const target = node instanceof HTMLElement ? node : node.parentElement;
-
-    if (target instanceof HTMLElement) {
-      target.classList.add("highlighted-temp");
-      window.setTimeout(() => target.classList.remove("highlighted-temp"), 1300);
-    }
+    highlightIssueLine(safeFrom);
   };
 
   useEffect(() => {
@@ -295,6 +435,14 @@ export const Checker = ({ messages }: Props) => {
 
     return () => observer.disconnect();
   }, [input, hasChecked]);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current !== null) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Page aria-labelledby="checker-heading">
@@ -321,6 +469,7 @@ export const Checker = ({ messages }: Props) => {
                 setResults([]);
                 setHasChecked(false);
                 setExtensions([html()]);
+                setActiveTab("all");
               }}
             >
               {messages.checker.loadExample}
@@ -332,6 +481,7 @@ export const Checker = ({ messages }: Props) => {
                 setResults([]);
                 setHasChecked(false);
                 setExtensions([html()]);
+                setActiveTab("all");
               }}
             >
               {messages.checker.clear}
@@ -357,22 +507,55 @@ export const Checker = ({ messages }: Props) => {
             {sortedResults.length > 0 && (
               <>
                 <ResultMeta>{messages.checker.foundIssues(sortedResults.length)}</ResultMeta>
-                <ResultList>
-                  {sortedResults.map((issue, index) => {
-                    const impact = issue.impact ?? "unknown";
-                    return (
-                      <ResultItem key={`${issue.id}-${index}`}>
-                        <ResultButton type="button" onClick={() => scrollToIssue(issue.from)}>
-                          <ResultTop>
-                            <Severity $impact={impact}>{impact}</Severity>
-                            <strong>{issue.message}</strong>
-                          </ResultTop>
-                          <Snippet>{issue.html}</Snippet>
-                        </ResultButton>
-                      </ResultItem>
-                    );
-                  })}
-                </ResultList>
+                <PriorityTabs role="tablist" aria-label={messages.checker.resultsTitle}>
+                  {impactTabs.map((tab) => (
+                    <PriorityTabButton
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === tab}
+                      $active={activeTab === tab}
+                      onClick={() => setActiveTab(tab)}
+                    >
+                      <span>{messages.checker.priorityTabs[tab]}</span>
+                      <TabCount>{tabCounts[tab]}</TabCount>
+                    </PriorityTabButton>
+                  ))}
+                </PriorityTabs>
+
+                {visibleResults.length === 0 && (
+                  <EmptyPriorityMessage>{messages.checker.noIssuesInPriority}</EmptyPriorityMessage>
+                )}
+
+                {visibleResults.length > 0 && (
+                  <ResultList>
+                    {visibleResults.map((issue, index) => {
+                      const impact = issue.impact ?? "unknown";
+                      const lineNumber = getLineNumber(input, issue.from);
+                      return (
+                        <ResultItem key={`${issue.id}-${index}`}>
+                          <ResultButton type="button" onClick={() => scrollToIssue(issue.from)}>
+                            <ResultTop>
+                              <Severity $impact={impact}>{impact}</Severity>
+                              <strong>{issue.message}</strong>
+                            </ResultTop>
+                            <Snippet>{issue.html}</Snippet>
+                          </ResultButton>
+                          <IssueMeta>
+                            <span>{messages.checker.lineInfo(lineNumber)}</span>
+                            <WcagLink
+                              href={issue.wcagUrl ?? "https://www.w3.org/WAI/standards-guidelines/wcag/"}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                            >
+                              {messages.checker.wcagLinkLabel}
+                            </WcagLink>
+                          </IssueMeta>
+                        </ResultItem>
+                      );
+                    })}
+                  </ResultList>
+                )}
               </>
             )}
           </ResultsViewport>
