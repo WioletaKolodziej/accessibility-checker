@@ -1,37 +1,44 @@
 import React from "react";
 import styled from "styled-components";
 import { Hint, Label } from "./SharedStyles";
+import { I18nMessages } from "../i18n";
 
-
-
+const Wrapper = styled.section`
+  width: 100%;
+  max-width: 1200px;
+  margin: 2rem auto 0;
+  padding: 1.25rem;
+  border-radius: 18px;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  box-shadow: ${({ theme }) => theme.shadow};
+`;
 
 const PreviewContainer = styled.div`
   width: 100%;
-  min-height: 50vh;
-  background-color: #fff;
-  color: #000;
-  border: 1px solid #ccc;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 1rem 2rem;
-  border-radius: 2px;
+  min-height: 280px;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  border-radius: 14px;
+  padding: 1rem;
   overflow: auto;
 `;
 
 interface HTMLVisualizerProps {
   html: string;
+  messages: I18nMessages["preview"];
 }
 
-const HTMLVisualizer: React.FC<HTMLVisualizerProps> = ({ html }) => {
+const HTMLVisualizer: React.FC<HTMLVisualizerProps> = ({ html, messages }) => {
   return (
-    <div>
-      <Hint>
-      💡 The rendered HTML below reflects the markup you provided. It is displayed as it would be rendered by a browser.
-      </Hint>
-      <Label>HTML Preview</Label>
+    <Wrapper aria-label={messages.wrapperAriaLabel}>
+      <Label as="h3">{messages.title}</Label>
+      <Hint>{messages.hint}</Hint>
       <PreviewContainer>
         <div dangerouslySetInnerHTML={{ __html: html }} />
       </PreviewContainer>
-    </div>
+    </Wrapper>
   );
 };
 
